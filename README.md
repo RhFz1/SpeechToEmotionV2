@@ -1,0 +1,1 @@
+## This repo contains a Speech To Emotion Detecion Model, going to be used for mental health applications.
