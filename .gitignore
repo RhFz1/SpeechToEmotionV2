@@ -1,0 +1,5 @@
+# Ignoring data files and data loaders.
+/venv
+/data
+/loaded_datasets
+/models
