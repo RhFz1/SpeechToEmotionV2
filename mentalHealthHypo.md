@@ -1,88 +1,85 @@
-# Mel Spectrograms
+# Fast Fourier Transform (FFT)
 
-A **Mel Spectrogram** is a representation of the short-term power spectrum of a sound signal, where the frequency axis is converted to the Mel scale. The Mel scale approximates the human ear's response to different frequencies, providing a more perceptually meaningful representation of sound.
+The Fast Fourier Transform (FFT) is an efficient algorithm to compute the Discrete Fourier Transform (DFT) and its inverse. The DFT is used to convert a sequence of complex numbers from the time domain to the frequency domain.
 
-## Steps to Compute a Mel Spectrogram
+## Discrete Fourier Transform (DFT)
 
-1. **Pre-emphasis**: This step is used to amplify the high frequencies. The pre-emphasis filter can be applied using the following equation:
+Given a sequence of \( N \) complex numbers \( x_0, x_1, x_2, \ldots, x_{N-1} \), the DFT is defined by:
 
-    ```
-    y(t) = x(t) - α * x(t-1)
-    ```
+\[
+X_k = \sum_{n=0}^{N-1} x_n \cdot e^{-i 2 \pi k n / N} \quad \text{for} \quad k = 0, 1, 2, \ldots, N-1
+\]
 
-    where `x(t)` is the input signal, `y(t)` is the output signal, and `α` (alpha) is the pre-emphasis coefficient (typically between 0.95 and 0.97).
+where:
+- \( X_k \) are the DFT coefficients.
+- \( i \) is the imaginary unit with \( i^2 = -1 \).
+- \( e^{-i 2 \pi k n / N} \) represents the complex exponential function.
 
-2. **Framing**: The signal is divided into short frames of equal length. Each frame can be represented as:
+## Inverse Discrete Fourier Transform (IDFT)
 
-    ```
-    x[n] = x[n + i * H], for i = 0, 1, 2, ...
-    ```
+The inverse of the DFT, which converts frequency domain data back to the time domain, is given by:
 
-    where `H` is the hop length (number of samples between successive frames), and `n` is the frame length.
+\[
+x_n = \frac{1}{N} \sum_{k=0}^{N-1} X_k \cdot e^{i 2 \pi k n / N} \quad \text{for} \quad n = 0, 1, 2, \ldots, N-1
+\]
 
-3. **Windowing**: Each frame is multiplied by a window function (e.g., Hamming window) to reduce spectral leakage. The windowed signal `w[n]` is:
+## Fast Fourier Transform (FFT)
 
-    ```
-    w[n] = x[n] * h[n]
-    ```
+The FFT algorithm reduces the complexity of computing the DFT from \( O(N^2) \) to \( O(N \log N) \). This is achieved by recursively breaking down a DFT of any composite size \( N \) into many smaller DFTs.
 
-    where `h[n]` is the window function.
+### Cooley-Tukey Algorithm
 
-4. **Fourier Transform and Power Spectrum**: The Discrete Fourier Transform (DFT) is applied to each windowed frame to obtain the frequency spectrum. The power spectrum `P(f)` is then computed:
+The most common FFT algorithm is the Cooley-Tukey algorithm, which works by dividing the DFT into two smaller DFTs of even and odd indices. The steps are as follows:
 
-    ```
-    P(f) = |X(f)|^2
-    ```
+1. **Divide**: Split the sequence \( x \) into two halves: even-indexed elements \( x_{\text{even}} \) and odd-indexed elements \( x_{\text{odd}} \).
 
-    where `X(f)` is the DFT of the windowed signal.
+\[
+x_{\text{even}} = x_{0}, x_{2}, x_{4}, \ldots, x_{N-2}
+\]
+\[
+x_{\text{odd}} = x_{1}, x_{3}, x_{5}, \ldots, x_{N-1}
+\]
 
-5. **Mel Filter Bank**: The power spectra are mapped onto the Mel scale using a filter bank. Each filter in the bank is triangular and corresponds to a point on the Mel scale. The Mel frequency `m(f)` is given by:
+2. **Conquer**: Recursively compute the DFT of the two halves.
+3. **Combine**: Combine the results to get the final DFT.
 
-    ```
-    m(f) = 2595 * log10(1 + f / 700)
-    ```
+Mathematically, this is expressed as:
 
-6. **Mel Spectrogram**: The result of applying the Mel filter bank to the power spectra gives the Mel spectrogram. The Mel spectrogram `S_m` can be computed as:
+\[
+X_k = X_k^{\text{even}} + e^{-i 2 \pi k / N} X_k^{\text{odd}}
+\]
+\[
+X_{k+N/2} = X_k^{\text{even}} - e^{-i 2 \pi k / N} X_k^{\text{odd}}
+\]
 
-    ```
-    S_m = M * P
-    ```
+for \( k = 0, 1, 2, \ldots, N/2 - 1 \).
 
-    where `M` is the Mel filter bank matrix and `P` is the power spectrum vector.
+## Radix-2 FFT
 
-## Example Code (Python)
+The Radix-2 FFT is a special case of the Cooley-Tukey algorithm where the sequence length \( N \) is a power of 2. This makes the recursive division straightforward and highly efficient.
 
-Here is a simple Python example using the `librosa` library to compute a Mel Spectrogram:
+### Butterfly Diagram
 
-```python
-import librosa
-import librosa.display
-import matplotlib.pyplot as plt
-import numpy as np
+The combination step in the Radix-2 FFT can be visualized using a butterfly diagram, which shows how pairs of values are combined and recombined at each stage.
 
-# Load audio file
-y, sr = librosa.load('audio_file.wav')
+### Example
 
-# Apply pre-emphasis filter
-y_preemphasized = np.append(y[0], y[1:] - 0.97 * y[:-1])
+For a sequence \( x \) of length 8 (i.e., \( N = 8 \)):
 
-# Compute Short-Time Fourier Transform (STFT)
-D = np.abs(librosa.stft(y_preemphasized))**2
+1. Divide into even and odd indexed elements.
+2. Recursively apply FFT to each half.
+3. Combine the results using the butterfly structure.
 
-# Compute Mel filter bank
-mel_basis = librosa.filters.mel(sr=sr, n_fft=2048, n_mels=128)
+## Applications
 
-# Compute Mel Spectrogram
-S = np.dot(mel_basis, D)
+FFT is widely used in various fields, including:
+- Signal processing
+- Image processing
+- Solving partial differential equations
+- Convolution operations
 
-# Convert to logarithmic scale (dB)
-S_dB = librosa.power_to_db(S, ref=np.max)
+## Conclusion
 
-# Display Mel Spectrogram
-plt.figure(figsize=(10, 4))
-librosa.display.specshow(S_dB, sr=sr, x_axis='time', y_axis='mel', fmax=8000)
-plt.colorbar(format='%+2.0f dB')
-plt.title('Mel Spectrogram')
-plt.tight_layout()
-plt.show()
-```
+The FFT is a powerful algorithm that significantly speeds up the computation of the DFT. Its recursive nature and efficient combination steps make it indispensable in modern computational applications.
+
+For further reading and a deeper dive into FFT algorithms, refer to textbooks on numerical methods and signal processing.
